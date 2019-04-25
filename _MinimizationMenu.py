@@ -46,8 +46,8 @@ class MinimizationMenu():
                 self.__nb_steps = min(self.__nb_steps, 5000)
             elif btn.text.value_idle == "-":
                 self.__nb_steps -= 500
-                self.__nb_steps = max(self.__nb_steps, 0)
-            self.__steps_label.set_all_text(str(self.__nb_steps))
+                self.__nb_steps = max(self.__nb_steps, 500)
+            self.__steps_label.text_value = str(self.__nb_steps)
             self.__plugin.update_content(self.__steps_label)
 
         def switch_steepest(btn):
@@ -67,19 +67,24 @@ class MinimizationMenu():
         self.__menu = menu
 
         # getting elements, for future update
-        self.__steps_label = menu.root.find_node("steps_label", True).get_content()[0]
-        self.__start_btn = menu.root.find_node("start_btn", True).get_content()[0]
+        self.__steps_label = menu.root.find_node("steps_label", True).get_content()
+        self.__start_btn = menu.root.find_node("start", True).get_content()
 
         # setting callbacks
-        menu.root.find_node("general_amber", True).get_content()[0].register_pressed_callback(ff_selected)
-        menu.root.find_node("ghemical", True).get_content()[0].register_pressed_callback(ff_selected)
-        menu.root.find_node("mmff94", True).get_content()[0].register_pressed_callback(ff_selected)
-        menu.root.find_node("mmff94s", True).get_content()[0].register_pressed_callback(ff_selected)
-        menu.root.find_node("universal", True).get_content()[0].register_pressed_callback(ff_selected)
-        menu.root.find_node("add_steps", True).get_content()[0].register_pressed_callback(change_steps)
-        menu.root.find_node("remove_steps", True).get_content()[0].register_pressed_callback(change_steps)
-        menu.root.find_node("steepest", True).get_content()[0].register_pressed_callback(switch_steepest)
-        menu.root.find_node("start", True).get_content()[0].register_pressed_callback(switch_minimization)
+        menu.root.find_node("general_amber", True).get_content().register_pressed_callback(ff_selected)
+        menu.root.find_node("ghemical", True).get_content().register_pressed_callback(ff_selected)
+        menu.root.find_node("mmff94", True).get_content().register_pressed_callback(ff_selected)
+        menu.root.find_node("mmff94s", True).get_content().register_pressed_callback(ff_selected)
+        universal_btn = menu.root.find_node("universal", True).get_content()
+        universal_btn.register_pressed_callback(ff_selected)
+        universal_btn.selected = True
+        self.__selected_ff_btn = universal_btn
+        menu.root.find_node("add_steps", True).get_content().register_pressed_callback(change_steps)
+        menu.root.find_node("remove_steps", True).get_content().register_pressed_callback(change_steps)
+        steepest_btn = menu.root.find_node("steepest", True).get_content()
+        steepest_btn.register_pressed_callback(switch_steepest)
+        steepest_btn.selected = True
+        self.__start_btn.register_pressed_callback(switch_minimization)
 
     def __get_selected_forcefield(self):
         if self.__selected_ff_btn:
