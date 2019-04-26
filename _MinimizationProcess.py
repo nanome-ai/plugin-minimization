@@ -1,9 +1,11 @@
 import nanome
 from nanome.util import Logs, Octree
+from nanome.util.stream import StreamCreationError
 
 import tempfile
 import subprocess
 from timeit import default_timer as timer
+import traceback
 
 class MinimizationProcess():
     def __init__(self, plugin):
@@ -12,16 +14,20 @@ class MinimizationProcess():
         self.__stream = None
     
     def start_process(self, workspace, ff, steps, steepest):
-        def on_stream_creation(stream):
+        def on_stream_creation(stream, error):
+            if error != StreamCreationError.NoError:
+                Logs.error("Error while creating stream")
+                return
+
             self.__stream = stream
-            args = ['./nanobabel.exe', 'MINIMIZE', '-h', '-l', '1', '-n', steps, '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', data_dir.name]
+            args = ['./nanobabel.exe', 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', str(ff), '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', data_dir.name]
             if steepest:
                 args.append('-sd')
             try:
                 self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 self.__is_running = True
             except:
-                Logs.error("Couldn't execute nanobabel, please check if executable is in the plugin folder and has permissions")
+                Logs.error("Couldn't execute nanobabel, please check if executable is in the plugin folder and has permissions:\n", traceback.format_exc())
 
         input_file = tempfile.NamedTemporaryFile(delete=False)
         constraints_file = tempfile.NamedTemporaryFile(delete=False)
@@ -99,7 +105,7 @@ class MinimizationProcess():
         for complex in workspace.complexes:
             complex_local_to_world_matrix = complex.transform.get_relative_to_absolute_matrix()
             for atom in complex.atoms:
-                if atom.selected == True:
+                if atom.rendering.selected == True:
                     atom_absolute_pos = complex_local_to_world_matrix * self.__workspace_absolute_to_relative_matrix * atom.position
                     selected_atoms.add(atom, atom_absolute_pos)
 
@@ -118,11 +124,11 @@ class MinimizationProcess():
         result_chain.add_residue(result_residue)
 
         for complex in workspace.complexes:
-            complex_local_to_world_matrix = complex.get_relative_to_absolute_matrix()
+            complex_local_to_world_matrix = complex.transform.get_relative_to_absolute_matrix()
 
-            molecule = complex.molecules[complex.rendering.current_frame]
+            molecule = complex._molecules[complex.rendering.current_frame]
             for atom in molecule.atoms:
-                atom_absolute_pos = atom.position * complex_local_to_world_matrix * self.__workspace_absolute_to_relative_matrix
+                atom_absolute_pos = complex_local_to_world_matrix * self.__workspace_absolute_to_relative_matrix * atom.molecular.position
                 selected_atoms.get_near_append(atom_absolute_pos, 7, found_atoms, 1)
 
                 if len(found_atoms) > 0:
@@ -145,6 +151,6 @@ class MinimizationProcess():
     def __save__constraints(self, path, saved_atoms):
         file = open(path, 'w')
         for atom in saved_atoms:
-            if atom.selected == False:
+            if atom.rendering.selected == False:
                 file.write("ATOM:FIXED:" + atom.molecular.serial)
         file.close()
