@@ -9,6 +9,9 @@ class Minimization(nanome.PluginInstance):
         self.__process = MinimizationProcess(self)
         self.__menu.build_menu()
 
+    def update(self):
+        self.__process.update()
+
     def on_run(self):
         self.__menu.start_minimization()
 

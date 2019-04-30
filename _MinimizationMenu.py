@@ -87,17 +87,17 @@ class MinimizationMenu():
         self.__start_btn.register_pressed_callback(switch_minimization)
 
     def __get_selected_forcefield(self):
-        if self.__selected_ff_btn:
-            return 0
+        if self.__selected_ff_btn == None:
+            return 'Uff'
         ff_text = self.__selected_ff_btn.text.value_idle
         if ff_text == "General Amber":
-            return 1
+            return 'Gaff'
         elif ff_text == "Ghemical":
-            return 2
+            return 'Ghemical'
         elif ff_text == "MMFF94":
-            return 3
+            return 'MMFF94'
         elif ff_text == "MMFF94s":
-            return 4
+            return 'MMFF94s'
         elif ff_text == "Universal":
-            return 0
-        return 0
+            return 'Uff'
+        return 'Uff'

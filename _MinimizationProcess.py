@@ -20,24 +20,23 @@ class MinimizationProcess():
                 return
 
             self.__stream = stream
-            args = ['./nanobabel.exe', 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', str(ff), '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', data_dir.name]
+            args = ['./nanobabel/nanobabel.exe', 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', 'data']
+            Logs.debug(args)
             if steepest:
                 args.append('-sd')
             try:
-                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='nanobabel', text=True, encoding="utf-8")
                 self.__is_running = True
+                Logs.debug("Nanobabel started")
             except:
                 Logs.error("Couldn't execute nanobabel, please check if executable is in the plugin folder and has permissions:\n", traceback.format_exc())
 
-        input_file = tempfile.NamedTemporaryFile(delete=False)
-        constraints_file = tempfile.NamedTemporaryFile(delete=False)
-        output_file = tempfile.NamedTemporaryFile(delete=False)
-        data_dir = tempfile.TemporaryDirectory()
+        input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mol')
+        constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
+        output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
         self.__output_lines = []
         self.__timer = timer()
 
-        self.__workspace_absolute_to_relative_matrix = workspace.transform.get_absolute_to_relative_matrix()
-        self.__workspace_relative_to_absolute_matrix = workspace.transform.get_relative_to_absolute_matrix()
         (saved_atoms, indices) = self.__save__atoms(input_file.name, workspace)
         Logs.debug("Wrote input file:", input_file.name)
         self.__save__constraints(constraints_file.name, saved_atoms)
@@ -54,15 +53,12 @@ class MinimizationProcess():
         if self.__is_running == False:
             return
 
-        if self.__process.poll() == None:
-            self.stop_process()
-            return
-
-        output, errors = self.__process.communicate()
-        for error in errors:
+        output, error = self.__process.communicate()
+        if error != None:
             Logs.error(error) # Maybe abort in case of error?
 
-        data_chunk = self.__processing_output(output)
+        split_output = output.split('\n')
+        data_chunk = self.__processing_output(split_output)
         if data_chunk != None:
             # Using internal functions here, we should expose a better API here
             content = nanome._internal._structure._io._pdb.parse_string(data_chunk)
@@ -70,6 +66,11 @@ class MinimizationProcess():
             if timer() - self.__timer >= 0.1:
                 self.__match_and_move(complex)
                 self.__timer = timer()
+
+        if self.__process.poll() == None:
+            self.stop_process()
+            Logs.debug("Nanobabel done")
+            return
 
     @staticmethod
     def __generate_key(molecule_number, atom_serial):
@@ -79,18 +80,18 @@ class MinimizationProcess():
     def __match_and_move(self, complex):
         positions = [0] * len(self.__atom_position_index_by_serial) * 3
         for atom in complex.atoms:
-            if atom.serial in self.__atom_position_index_by_serial:
-                (idx, complex) = self.__atom_position_index_by_serial[atom.serial]
+            if atom.molecular.serial in self.__atom_position_index_by_serial:
+                (idx, complex) = self.__atom_position_index_by_serial[atom.molecular.serial]
                 complex_absolute_to_relative = complex.transform.get_absolute_to_relative_matrix()
-                atom_absolute_pos = self.__workspace_relative_to_absolute_matrix * complex_absolute_to_relative * atom.transform.position
+                atom_absolute_pos = complex_absolute_to_relative * atom.molecular.position
                 positions[idx] = atom_absolute_pos.x
                 positions[idx + 1] = atom_absolute_pos.y
                 positions[idx + 2] = atom_absolute_pos.z
         self.__stream.update(positions)
 
-    def __processing_output(self, output):
+    def __processing_output(self, split_output):
         result = None
-        for line in output:
+        for line in split_output:
             if "Step update start" in line:
                 self.__output_lines.clear()
             elif "Step update end" in line:
@@ -103,10 +104,10 @@ class MinimizationProcess():
         selected_atoms = Octree()
 
         for complex in workspace.complexes:
-            complex_local_to_world_matrix = complex.transform.get_relative_to_absolute_matrix()
+            complex_local_to_workspace_matrix = complex.transform.get_relative_to_absolute_matrix()
             for atom in complex.atoms:
                 if atom.rendering.selected == True:
-                    atom_absolute_pos = complex_local_to_world_matrix * self.__workspace_absolute_to_relative_matrix * atom.position
+                    atom_absolute_pos = complex_local_to_workspace_matrix * atom.molecular.position
                     selected_atoms.add(atom, atom_absolute_pos)
 
         self.__atom_position_index_by_serial = dict()
@@ -124,11 +125,11 @@ class MinimizationProcess():
         result_chain.add_residue(result_residue)
 
         for complex in workspace.complexes:
-            complex_local_to_world_matrix = complex.transform.get_relative_to_absolute_matrix()
+            complex_local_to_workspace_matrix = complex.transform.get_relative_to_absolute_matrix()
 
             molecule = complex._molecules[complex.rendering.current_frame]
             for atom in molecule.atoms:
-                atom_absolute_pos = complex_local_to_world_matrix * self.__workspace_absolute_to_relative_matrix * atom.molecular.position
+                atom_absolute_pos = complex_local_to_workspace_matrix * atom.molecular.position
                 selected_atoms.get_near_append(atom_absolute_pos, 7, found_atoms, 1)
 
                 if len(found_atoms) > 0:
@@ -152,5 +153,5 @@ class MinimizationProcess():
         file = open(path, 'w')
         for atom in saved_atoms:
             if atom.rendering.selected == False:
-                file.write("ATOM:FIXED:" + atom.molecular.serial)
+                file.write("ATOM:FIXED:" + str(atom.molecular.serial))
         file.close()
