@@ -7,12 +7,18 @@ import subprocess
 from timeit import default_timer as timer
 import traceback
 
+# TMP
+from nanome._internal._structure._io._sdf.save import Options as SDFOptions
+
+SDFOPTIONS = SDFOptions()
+SDFOPTIONS.write_bonds = True
+
 class MinimizationProcess():
     def __init__(self, plugin):
         self.__plugin = plugin
         self.__is_running = False
         self.__stream = None
-    
+
     def start_process(self, workspace, ff, steps, steepest):
         def on_stream_creation(stream, error):
             if error != StreamCreationError.NoError:
@@ -45,7 +51,7 @@ class MinimizationProcess():
 
     def stop_process(self):
         self.__is_running = False
-        if self.__stream != None:
+        if self.__stream is not None:
             self.__stream.destroy()
         self.__plugin.minimization_done()
 
@@ -54,7 +60,7 @@ class MinimizationProcess():
             return
 
         output, error = self.__process.communicate()
-        if error != None:
+        if error != '':
             Logs.error(error) # Maybe abort in case of error?
 
         split_output = output.split('\n')
@@ -63,30 +69,25 @@ class MinimizationProcess():
             # Using internal functions here, we should expose a better API here
             content = nanome._internal._structure._io._pdb.parse_string(data_chunk)
             complex = nanome._internal._structure._io._pdb.structure(content)
-            if timer() - self.__timer >= 0.1:
-                self.__match_and_move(complex)
-                self.__timer = timer()
+            # if timer() - self.__timer >= 0.1:
+            self.__match_and_move(complex)
+            # self.__timer = timer()
 
-        if self.__process.poll() == None:
+        if self.__process.poll() is not None:
             self.stop_process()
             Logs.debug("Nanobabel done")
             return
 
-    @staticmethod
-    def __generate_key(molecule_number, atom_serial):
-        molecule = molecule_number << 32
-        return molecule | atom_serial
-
     def __match_and_move(self, complex):
-        positions = [0] * len(self.__atom_position_index_by_serial) * 3
+        positions = [0] * (len(self.__atom_position_index_by_serial) * 3)
         for atom in complex.atoms:
             if atom.molecular.serial in self.__atom_position_index_by_serial:
                 (idx, complex) = self.__atom_position_index_by_serial[atom.molecular.serial]
-                complex_absolute_to_relative = complex.transform.get_absolute_to_relative_matrix()
-                atom_absolute_pos = complex_absolute_to_relative * atom.molecular.position
-                positions[idx] = atom_absolute_pos.x
-                positions[idx + 1] = atom_absolute_pos.y
-                positions[idx + 2] = atom_absolute_pos.z
+                complex_absolute_to_relative = complex.transform.get_workspace_to_complex_matrix()
+                atom_relative_pos = complex_absolute_to_relative * atom.molecular.position
+                positions[idx * 3] = atom_relative_pos.x
+                positions[idx * 3 + 1] = atom_relative_pos.y
+                positions[idx * 3 + 2] = atom_relative_pos.z
         self.__stream.update(positions)
 
     def __processing_output(self, split_output):
@@ -104,9 +105,9 @@ class MinimizationProcess():
         selected_atoms = Octree()
 
         for complex in workspace.complexes:
-            complex_local_to_workspace_matrix = complex.transform.get_relative_to_absolute_matrix()
+            complex_local_to_workspace_matrix = complex.transform.get_complex_to_workspace_matrix()
             for atom in complex.atoms:
-                if atom.rendering.selected == True:
+                if atom.rendering.selected is True:
                     atom_absolute_pos = complex_local_to_workspace_matrix * atom.molecular.position
                     selected_atoms.add(atom, atom_absolute_pos)
 
@@ -115,7 +116,9 @@ class MinimizationProcess():
         saved_atoms = []
         saved_atoms_indices = []
         atom_position_index = 0
+        serial = 1
         found_atoms = []
+        bonds = []
         result_complex = nanome.structure.Complex()
         result_molecule = nanome.structure.Molecule()
         result_chain = nanome.structure.Chain()
@@ -125,33 +128,45 @@ class MinimizationProcess():
         result_chain.add_residue(result_residue)
 
         for complex in workspace.complexes:
-            complex_local_to_workspace_matrix = complex.transform.get_relative_to_absolute_matrix()
+            if not complex.rendering.visible:
+                continue
+
+            complex_local_to_workspace_matrix = complex.transform.get_complex_to_workspace_matrix()
 
             molecule = complex._molecules[complex.rendering.current_frame]
             for atom in molecule.atoms:
                 atom_absolute_pos = complex_local_to_workspace_matrix * atom.molecular.position
                 selected_atoms.get_near_append(atom_absolute_pos, 7, found_atoms, 1)
 
-                if len(found_atoms) > 0:
+                if len(found_atoms) > 0 and atom not in saved_atoms:
+                    atom.molecular.serial = serial
+                    serial += 1
+                    Logs.debug(atom.molecular.serial, atom_absolute_pos, atom.molecular.symbol)
                     self.__atom_position_index_by_serial[atom.molecular.serial] = (atom_position_index, complex)
                     atom_position_index += 1
+                    atom.molecular.position = atom_absolute_pos
                     saved_atoms.append(atom)
                     saved_atoms_indices.append(atom.index)
                     result_residue.add_atom(atom)
                     atom_by_index[atom.index] = atom
 
                     for bond in atom.bonds:
-                        if bond.atom1.index in atom_by_index and bond.atom2.index in atom_by_index:
-                            result_residue.add_bond(bond)
+                        if bond not in bonds \
+                            and bond.atom1.index in atom_by_index \
+                                and bond.atom2.index in atom_by_index:
+                            bonds.append(bond)
 
                 found_atoms.clear()
 
-        result_complex.io.to_sdf(path)
+        for bond in bonds:
+            result_residue.add_bond(bond)
+
+        result_complex.io.to_sdf(path, SDFOPTIONS)
         return (saved_atoms, saved_atoms_indices)
 
     def __save__constraints(self, path, saved_atoms):
         file = open(path, 'w')
         for atom in saved_atoms:
-            if atom.rendering.selected == False:
+            if atom.rendering.selected is False:
                 file.write("ATOM:FIXED:" + str(atom.molecular.serial))
         file.close()
