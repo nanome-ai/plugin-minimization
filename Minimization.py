@@ -13,7 +13,7 @@ class Minimization(nanome.PluginInstance):
         self.__process.update()
 
     def on_run(self):
-        self.__menu.start_minimization()
+        self.__menu.toggle_minimization()
 
     def on_advanced_settings(self):
         self.__menu.open_menu()
@@ -29,6 +29,12 @@ class Minimization(nanome.PluginInstance):
 
     def minimization_done(self):
         self.__menu.change_running_status(False)
+
+    def set_run_status(self, running):
+        if running:
+            self.set_plugin_list_button(nanome.PluginInstance.PluginListButtonType.run, "Stop")
+        else:
+            self.set_plugin_list_button(nanome.PluginInstance.PluginListButtonType.run, "Run")
 
 if __name__ == "__main__":
     plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True)

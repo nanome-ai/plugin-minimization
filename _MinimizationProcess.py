@@ -6,6 +6,7 @@ import tempfile
 import subprocess
 from timeit import default_timer as timer
 import traceback
+from collections import deque
 
 # TMP
 from nanome._internal._structure._io._sdf.save import Options as SDFOptions
@@ -26,6 +27,7 @@ class MinimizationProcess():
                 return
 
             self.__stream = stream
+            self.__data_queue = deque()
             args = ['./nanobabel/nanobabel.exe', 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', 'data']
             Logs.debug(args)
             if steepest:
@@ -61,11 +63,13 @@ class MinimizationProcess():
 
         output, error = self.__process.communicate()
         if error != '':
-            Logs.error(error) # Maybe abort in case of error?
+            Logs.error(error)  # Maybe abort in case of error?
 
         split_output = output.split('\n')
-        data_chunk = self.__processing_output(split_output)
-        if data_chunk != None:
+        self.__processing_output(split_output)
+
+        if len(self.__data_queue) > 0:
+            data_chunk = self.__data_queue.popleft()
             # Using internal functions here, we should expose a better API here
             content = nanome._internal._structure._io._pdb.parse_string(data_chunk)
             complex = nanome._internal._structure._io._pdb.structure(content)
@@ -73,7 +77,7 @@ class MinimizationProcess():
             self.__match_and_move(complex)
             # self.__timer = timer()
 
-        if self.__process.poll() is not None:
+        if self.__process.poll() is not None and len(self.__data_queue) == 0:
             self.stop_process()
             Logs.debug("Nanobabel done")
             return
@@ -91,15 +95,13 @@ class MinimizationProcess():
         self.__stream.update(positions)
 
     def __processing_output(self, split_output):
-        result = None
         for line in split_output:
             if "Step update start" in line:
                 self.__output_lines.clear()
             elif "Step update end" in line:
-                result = self.__output_lines.copy()
+                self.__data_queue.append(self.__output_lines.copy())
             else:
                 self.__output_lines.append(line)
-        return result
 
     def __save__atoms(self, path, workspace):
         selected_atoms = Octree()
@@ -141,7 +143,6 @@ class MinimizationProcess():
                 if len(found_atoms) > 0 and atom not in saved_atoms:
                     atom.molecular.serial = serial
                     serial += 1
-                    Logs.debug(atom.molecular.serial, atom_absolute_pos, atom.molecular.symbol)
                     self.__atom_position_index_by_serial[atom.molecular.serial] = (atom_position_index, complex)
                     atom_position_index += 1
                     atom.molecular.position = atom_absolute_pos

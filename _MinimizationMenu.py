@@ -14,10 +14,17 @@ class MinimizationMenu():
     def __update_start_btn(self, running):
         self.__start_btn.selected = running
         self.__plugin.update_content(self.__start_btn)
+        self.__plugin.set_run_status(running)
 
     def change_running_status(self, running):
         self.__running = running
         self.__update_start_btn(running)
+
+    def toggle_minimization(self):
+        if self.__running:
+            self.stop_minimization()
+        else:
+            self.start_minimization()
 
     def start_minimization(self):
         self.change_running_status(True)
@@ -56,10 +63,7 @@ class MinimizationMenu():
             self.__plugin.update_content(btn)
 
         def switch_minimization(btn):
-            if not self.__running:
-                self.start_minimization()
-            else:
-                self.stop_minimization()
+            self.toggle_minimization()
 
         # loading menus
         menu = nanome.ui.Menu.io.from_json("_MinimizationMenu.json")
