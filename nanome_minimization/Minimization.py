@@ -36,7 +36,10 @@ class Minimization(nanome.PluginInstance):
         else:
             self.set_plugin_list_button(nanome.PluginInstance.PluginListButtonType.run, "Run")
 
-if __name__ == "__main__":
+def main():
     plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True)
     plugin.set_plugin_class(Minimization)
     plugin.run('127.0.0.1', 8888)
+
+if __name__ == "__main__":
+    main()

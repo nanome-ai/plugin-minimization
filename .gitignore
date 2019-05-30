@@ -1,3 +1,6 @@
 .vscode/
 __pycache__
 nanome
+build/
+dist/
+nanome_minimization.egg-info/
