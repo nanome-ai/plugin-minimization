@@ -67,8 +67,8 @@ class MinimizationMenu():
 
         # loading menus
         menu = nanome.ui.Menu.io.from_json("_MinimizationMenu.json")
-        nanome.ui.Menu.set_plugin_menu(menu)
         self.__menu = menu
+        self.__plugin.menu = menu
 
         # getting elements, for future update
         self.__steps_label = menu.root.find_node("steps_label", True).get_content()

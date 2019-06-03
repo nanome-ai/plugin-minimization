@@ -1,5 +1,6 @@
 import nanome
 from nanome.util import Logs, Octree
+from nanome.api.structure import Complex
 from nanome.util.stream import StreamCreationError
 
 import tempfile
@@ -8,10 +9,8 @@ from timeit import default_timer as timer
 import traceback
 from collections import deque
 
-# TMP
-from nanome._internal._structure._io._sdf.save import Options as SDFOptions
 
-SDFOPTIONS = SDFOptions()
+SDFOPTIONS = Complex.io.SDFSaveOptions()
 SDFOPTIONS.write_bonds = True
 
 class MinimizationProcess():
@@ -70,9 +69,7 @@ class MinimizationProcess():
 
         if len(self.__data_queue) > 0:
             data_chunk = self.__data_queue.popleft()
-            # Using internal functions here, we should expose a better API here
-            content = nanome._internal._structure._io._pdb.parse_string(data_chunk)
-            complex = nanome._internal._structure._io._pdb.structure(content)
+            complex = nanome.api.structure.Complex.io.from_pdb(lines=data_chunk)
             # if timer() - self.__timer >= 0.1:
             self.__match_and_move(complex)
             # self.__timer = timer()
