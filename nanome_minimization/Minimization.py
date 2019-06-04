@@ -1,7 +1,7 @@
 import nanome
 
-from _MinimizationMenu import MinimizationMenu
-from _MinimizationProcess import MinimizationProcess
+from ._MinimizationMenu import MinimizationMenu
+from ._MinimizationProcess import MinimizationProcess
 
 class Minimization(nanome.PluginInstance):
     def start(self):

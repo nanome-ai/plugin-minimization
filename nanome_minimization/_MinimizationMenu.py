@@ -1,5 +1,7 @@
 import nanome
 
+import os
+
 class MinimizationMenu():
     def __init__(self, plugin):
         self.__plugin = plugin
@@ -66,7 +68,7 @@ class MinimizationMenu():
             self.toggle_minimization()
 
         # loading menus
-        menu = nanome.ui.Menu.io.from_json("_MinimizationMenu.json")
+        menu = nanome.ui.Menu.io.from_json(os.path.join(os.path.dirname(__file__), "_MinimizationMenu.json"))
         self.__menu = menu
         self.__plugin.menu = menu
 

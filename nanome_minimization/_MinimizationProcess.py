@@ -8,10 +8,11 @@ import subprocess
 from timeit import default_timer as timer
 import traceback
 from collections import deque
-
+import os
 
 SDFOPTIONS = Complex.io.SDFSaveOptions()
 SDFOPTIONS.write_bonds = True
+
 
 class MinimizationProcess():
     def __init__(self, plugin):
@@ -27,12 +28,14 @@ class MinimizationProcess():
 
             self.__stream = stream
             self.__data_queue = deque()
-            args = ['./nanobabel/nanobabel.exe', 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', 'data']
+            cwd_path = os.path.join(os.path.dirname(__file__), 'nanobabel')
+            exe_path = os.path.join(cwd_path, 'nanobabel.exe')
+            args = [exe_path, 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', 'data']
             Logs.debug(args)
             if steepest:
                 args.append('-sd')
             try:
-                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd='nanobabel', text=True, encoding="utf-8")
+                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd_path, text=True, encoding="utf-8")
                 self.__is_running = True
                 Logs.debug("Nanobabel started")
             except:
