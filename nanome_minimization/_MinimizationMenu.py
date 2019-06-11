@@ -23,7 +23,7 @@ class MinimizationMenu():
         self.__update_start_btn(running)
 
     def toggle_minimization(self):
-        if self.__running:
+        if self.__plugin._process._is_running:
             self.stop_minimization()
         else:
             self.start_minimization()

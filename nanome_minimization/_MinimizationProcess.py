@@ -17,7 +17,7 @@ SDFOPTIONS.write_bonds = True
 class MinimizationProcess():
     def __init__(self, plugin):
         self.__plugin = plugin
-        self.__is_running = False
+        self._is_running = False
         self.__stream = None
 
     def start_process(self, workspace, ff, steps, steepest):
@@ -36,7 +36,7 @@ class MinimizationProcess():
                 args.append('-sd')
             try:
                 self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd_path, text=True, encoding="utf-8")
-                self.__is_running = True
+                self._is_running = True
                 Logs.debug("Nanobabel started")
             except:
                 Logs.error("Couldn't execute nanobabel, please check if executable is in the plugin folder and has permissions:\n", traceback.format_exc())
@@ -54,13 +54,14 @@ class MinimizationProcess():
         self.__stream = self.__plugin.create_stream(indices, on_stream_creation)
 
     def stop_process(self):
-        self.__is_running = False
+        self._is_running = False
         if self.__stream is not None:
             self.__stream.destroy()
+        self.__stream = None
         self.__plugin.minimization_done()
 
     def update(self):
-        if self.__is_running == False:
+        if self._is_running == False:
             return
 
         output, error = self.__process.communicate()
@@ -92,6 +93,8 @@ class MinimizationProcess():
                 positions[idx * 3] = atom_relative_pos.x
                 positions[idx * 3 + 1] = atom_relative_pos.y
                 positions[idx * 3 + 2] = atom_relative_pos.z
+        if self.__stream == None:
+            return
         self.__stream.update(positions)
 
     def __processing_output(self, split_output):

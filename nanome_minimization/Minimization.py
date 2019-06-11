@@ -6,11 +6,11 @@ from ._MinimizationProcess import MinimizationProcess
 class Minimization(nanome.PluginInstance):
     def start(self):
         self.__menu = MinimizationMenu(self)
-        self.__process = MinimizationProcess(self)
+        self._process = MinimizationProcess(self)
         self.__menu.build_menu()
 
     def update(self):
-        self.__process.update()
+        self._process.update()
 
     def on_run(self):
         self.__menu.toggle_minimization()
@@ -20,12 +20,12 @@ class Minimization(nanome.PluginInstance):
 
     def start_minimization(self, ff, steps, steepest):
         def workspace_received(workspace):
-            self.__process.start_process(workspace, ff, steps, steepest)
+            self._process.start_process(workspace, ff, steps, steepest)
 
         self.request_workspace(workspace_received)
 
     def stop_minimization(self):
-        self.__process.stop_process()
+        self._process.stop_process()
 
     def minimization_done(self):
         self.__menu.change_running_status(False)
