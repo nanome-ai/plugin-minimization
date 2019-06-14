@@ -46,6 +46,7 @@ class MinimizationProcess():
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
         self.__output_lines = []
         self.__timer = timer()
+        self.__updating_stream = False
 
         (saved_atoms, indices) = self.__save__atoms(input_file.name, workspace)
         Logs.debug("Wrote input file:", input_file.name)
@@ -64,14 +65,15 @@ class MinimizationProcess():
         if self._is_running == False:
             return
 
-        output, error = self.__process.communicate()
-        if error != '':
-            Logs.error(error)  # Maybe abort in case of error?
+        if self.__process.poll() is None:
+            output, error = self.__process.communicate()
+            if error != '':
+                Logs.error(error)  # Maybe abort in case of error?
 
-        split_output = output.split('\n')
-        self.__processing_output(split_output)
+            split_output = output.split('\n')
+            self.__processing_output(split_output)
 
-        if len(self.__data_queue) > 0:
+        if len(self.__data_queue) > 0 and self.__updating_stream == False:
             data_chunk = self.__data_queue.popleft()
             complex = nanome.api.structure.Complex.io.from_pdb(lines=data_chunk)
             # if timer() - self.__timer >= 0.1:
@@ -95,7 +97,11 @@ class MinimizationProcess():
                 positions[idx * 3 + 2] = atom_relative_pos.z
         if self.__stream == None:
             return
-        self.__stream.update(positions)
+        self.__updating_stream = True
+        self.__stream.update(positions, self.__update_done)
+
+    def __update_done(self):
+        self.__updating_stream = False
 
     def __processing_output(self, split_output):
         for line in split_output:
