@@ -35,7 +35,7 @@ class MinimizationProcess():
             if steepest:
                 args.append('-sd')
             try:
-                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd_path, text=True, encoding="utf-8")
+                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, cwd=cwd_path, text=True, encoding="utf-8")
                 self._is_running = True
                 Logs.debug("Nanobabel started")
             except:
@@ -47,6 +47,8 @@ class MinimizationProcess():
         self.__output_lines = []
         self.__timer = timer()
         self.__updating_stream = False
+        self.__processed_output = 0
+        self.__processed_error = 0
 
         (saved_atoms, indices) = self.__save__atoms(input_file.name, workspace)
         Logs.debug("Wrote input file:", input_file.name)
@@ -65,11 +67,18 @@ class MinimizationProcess():
         if self._is_running == False:
             return
 
-        if self.__process.poll() is None:
-            output, error = self.__process.communicate()
-            if error != '':
-                Logs.error(error)  # Maybe abort in case of error?
+        output, error = self.__process.communicate()
 
+        error = error[self.__processed_error:]
+        self.__processed_error += len(error)
+        error = error.strip()
+        if error != '':
+            Logs.error(error)  # Maybe abort in case of error?
+
+        output = output[self.__processed_output:]
+        self.__processed_output += len(output)
+        output = output.strip()
+        if output != '':
             split_output = output.split('\n')
             self.__processing_output(split_output)
 
