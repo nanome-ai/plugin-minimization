@@ -187,5 +187,5 @@ class MinimizationProcess():
         file = open(path, 'w')
         for atom in saved_atoms:
             if atom.rendering.selected is False:
-                file.write("ATOM:FIXED:" + str(atom.molecular.serial))
+                file.write("ATOM:FIXED:" + str(atom.molecular.serial) + "\n")
         file.close()
