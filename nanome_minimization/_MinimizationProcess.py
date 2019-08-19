@@ -35,7 +35,7 @@ class MinimizationProcess():
             if steepest:
                 args.append('-sd')
             try:
-                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, cwd=cwd_path, text=True, encoding="utf-8")
+                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, cwd=cwd_path, universal_newlines=True, encoding="utf-8")
                 self._is_running = True
                 Logs.debug("Nanobabel started")
             except:
