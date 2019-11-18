@@ -6,7 +6,7 @@ README = (pathlib.Path(__file__).parent / "README.md").read_text()
 setup(
     name = 'nanome-minimization',
     packages=find_packages(),
-    version = '0.1.4',
+    version = '0.1.5',
     license='MIT',
     description = 'Nanome Plugin to run minimization on selected structures',
     long_description = README,
