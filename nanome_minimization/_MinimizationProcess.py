@@ -2,6 +2,7 @@ import nanome
 from nanome.util import Logs, Octree
 from nanome.api.structure import Complex
 from nanome.util.stream import StreamCreationError
+from nanome.util.enums import StreamType
 
 import tempfile
 import subprocess
@@ -62,7 +63,7 @@ class MinimizationProcess():
         Logs.debug("Wrote input file:", input_file.name)
         self.__save__constraints(constraints_file.name, saved_atoms)
         Logs.debug("Wrote constraints file:", constraints_file.name)
-        self.__stream = self.__plugin.create_stream(indices, on_stream_creation)
+        self.__stream = self.__plugin.create_writing_stream(indices, StreamType.position, on_stream_creation)
 
     def stop_process(self):
         self._is_running = False
@@ -105,10 +106,10 @@ class MinimizationProcess():
     def __match_and_move(self, complex):
         positions = [0] * (len(self.__atom_position_index_by_serial) * 3)
         for atom in complex.atoms:
-            if atom.molecular.serial in self.__atom_position_index_by_serial:
-                (idx, complex) = self.__atom_position_index_by_serial[atom.molecular.serial]
-                complex_absolute_to_relative = complex.transform.get_workspace_to_complex_matrix()
-                atom_relative_pos = complex_absolute_to_relative * atom.molecular.position
+            if atom.serial in self.__atom_position_index_by_serial:
+                (idx, complex) = self.__atom_position_index_by_serial[atom.serial]
+                complex_absolute_to_relative = complex.get_workspace_to_complex_matrix()
+                atom_relative_pos = complex_absolute_to_relative * atom.position
                 positions[idx * 3] = atom_relative_pos.x
                 positions[idx * 3 + 1] = atom_relative_pos.y
                 positions[idx * 3 + 2] = atom_relative_pos.z
@@ -133,10 +134,10 @@ class MinimizationProcess():
         selected_atoms = Octree()
 
         for complex in workspace.complexes:
-            complex_local_to_workspace_matrix = complex.transform.get_complex_to_workspace_matrix()
+            complex_local_to_workspace_matrix = complex.get_complex_to_workspace_matrix()
             for atom in complex.atoms:
-                if atom.rendering.selected is True:
-                    atom_absolute_pos = complex_local_to_workspace_matrix * atom.molecular.position
+                if atom.selected is True:
+                    atom_absolute_pos = complex_local_to_workspace_matrix * atom.position
                     selected_atoms.add(atom, atom_absolute_pos)
 
         self.__atom_position_index_by_serial = dict()
@@ -156,23 +157,23 @@ class MinimizationProcess():
         result_chain.add_residue(result_residue)
 
         for complex in workspace.complexes:
-            if not complex.rendering.visible:
+            if not complex.visible:
                 continue
             
             complex = complex.convert_to_frames()
-            complex_local_to_workspace_matrix = complex.transform.get_complex_to_workspace_matrix()
+            complex_local_to_workspace_matrix = complex.get_complex_to_workspace_matrix()
 
-            molecule = complex._molecules[complex.rendering.current_frame]
+            molecule = complex._molecules[complex.current_frame]
             for atom in molecule.atoms:
-                atom_absolute_pos = complex_local_to_workspace_matrix * atom.molecular.position
+                atom_absolute_pos = complex_local_to_workspace_matrix * atom.position
                 selected_atoms.get_near_append(atom_absolute_pos, 7, found_atoms, 1)
 
                 if len(found_atoms) > 0 and atom not in saved_atoms:
-                    atom.molecular.serial = serial
+                    atom.serial = serial
                     serial += 1
-                    self.__atom_position_index_by_serial[atom.molecular.serial] = (atom_position_index, complex)
+                    self.__atom_position_index_by_serial[atom.serial] = (atom_position_index, complex)
                     atom_position_index += 1
-                    atom.molecular.position = atom_absolute_pos
+                    atom.position = atom_absolute_pos
                     saved_atoms.append(atom)
                     saved_atoms_indices.append(atom.index)
                     result_residue.add_atom(atom)
@@ -195,6 +196,6 @@ class MinimizationProcess():
     def __save__constraints(self, path, saved_atoms):
         file = open(path, 'w')
         for atom in saved_atoms:
-            if atom.rendering.selected is False:
-                file.write("ATOM:FIXED:" + str(atom.molecular.serial) + "\n")
+            if atom.selected is False:
+                file.write("ATOM:FIXED:" + str(atom.serial) + "\n")
         file.close()
