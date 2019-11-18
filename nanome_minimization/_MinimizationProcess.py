@@ -13,6 +13,14 @@ import os
 SDFOPTIONS = Complex.io.SDFSaveOptions()
 SDFOPTIONS.write_bonds = True
 
+# hack to fix convert_to_frames killing atom indices:
+_atom_shallow_copy = nanome._internal._structure._Atom._shallow_copy
+def _atom_shallow_copy_fix(self, *args):
+    atom = _atom_shallow_copy(self, *args)
+    atom._index = self._index
+    return atom
+nanome._internal._structure._Atom._shallow_copy = _atom_shallow_copy_fix
+
 
 class MinimizationProcess():
     def __init__(self, plugin):
@@ -150,7 +158,8 @@ class MinimizationProcess():
         for complex in workspace.complexes:
             if not complex.rendering.visible:
                 continue
-
+            
+            complex = complex.convert_to_frames()
             complex_local_to_workspace_matrix = complex.transform.get_complex_to_workspace_matrix()
 
             molecule = complex._molecules[complex.rendering.current_frame]
