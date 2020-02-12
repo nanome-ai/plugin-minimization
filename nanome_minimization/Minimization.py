@@ -1,12 +1,19 @@
+import os
+import sys
 import nanome
+from nanome.util import Logs
 
 from ._MinimizationMenu import MinimizationMenu
 from ._MinimizationProcess import MinimizationProcess
 
+NANOBABEL = os.environ.get('NANOBABEL', os.path.join(os.getcwd(), 'nanobabel'))
+if not os.path.exists(NANOBABEL):
+    NANOBABEL = None
+
 class Minimization(nanome.PluginInstance):
     def start(self):
         self.__menu = MinimizationMenu(self)
-        self._process = MinimizationProcess(self)
+        self._process = MinimizationProcess(self, NANOBABEL)
         self.__menu.build_menu()
 
     def update(self):
@@ -37,6 +44,10 @@ class Minimization(nanome.PluginInstance):
             self.set_plugin_list_button(nanome.PluginInstance.PluginListButtonType.run, "Run")
 
 def main():
+    if not NANOBABEL:
+        Logs.error('Error: nanobabel not found, please set NANOBABEL env var')
+        sys.exit(1)
+
     plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True)
     plugin.set_plugin_class(Minimization)
     plugin.run('127.0.0.1', 8888)
