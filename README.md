@@ -2,6 +2,10 @@
 
 Minimization arranges the selected molecule to try to find a geometry where inter-atomic forces are as close to zero as possible.
 
+### Dependencies
+
+`nanome-minimization` requires `nanobabel` to exist in the working directory, or for the path to be specified in the environment variable `NANOBABEL`.
+
 ### Installation
 
 ```sh
