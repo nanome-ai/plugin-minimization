@@ -24,10 +24,11 @@ nanome._internal._structure._Atom._shallow_copy = _atom_shallow_copy_fix
 
 
 class MinimizationProcess():
-    def __init__(self, plugin):
+    def __init__(self, plugin, nanobabel_dir):
         self.__plugin = plugin
         self._is_running = False
         self.__stream = None
+        self.__nanobabel_dir = nanobabel_dir
 
     def start_process(self, workspace, ff, steps, steepest):
         def on_stream_creation(stream, error):
@@ -37,7 +38,7 @@ class MinimizationProcess():
 
             self.__stream = stream
             self.__data_queue = deque()
-            cwd_path = os.path.join(os.path.dirname(__file__), 'nanobabel')
+            cwd_path = self.__nanobabel_dir
             exe_path = os.path.join(cwd_path, 'nanobabel.exe')
             args = [exe_path, 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', 'data']
             Logs.debug(args)
@@ -159,7 +160,7 @@ class MinimizationProcess():
         for complex in workspace.complexes:
             if not complex.visible:
                 continue
-            
+
             complex = complex.convert_to_frames()
             complex_local_to_workspace_matrix = complex.get_complex_to_workspace_matrix()
 

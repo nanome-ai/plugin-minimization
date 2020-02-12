@@ -33,8 +33,6 @@ setup(
     ],
     package_data={
         "nanome_minimization": [
-            "nanobabel/*",
-            "nanobabel/data/*",
             "_MinimizationMenu.json"
         ]
     },
