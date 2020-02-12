@@ -1,8 +1,7 @@
-if [ $# -eq 0 ]
-then
+if [ $# -eq 0 ]; then
 	echo "No version bump. To bump version, pass major/minor/patch "
 else
-	bumpversion $1
+	bump2version $1
 fi
 
 rm -rf build
@@ -14,7 +13,7 @@ python setup.py bdist_wheel --universal
 
 read -rp "Upload? [yes/no] "
 
-if [[ ${REPLY,,} =~ ^(yes)$ ]]; then
+if [[ $REPLY =~ ^yes$ ]]; then
 	twine upload dist/*
 else
 	echo "Upload canceled "
