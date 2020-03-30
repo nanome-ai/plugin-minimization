@@ -15,6 +15,26 @@ class Minimization(nanome.PluginInstance):
         self.__menu = MinimizationMenu(self)
         self._process = MinimizationProcess(self, NANOBABEL)
         self.__menu.build_menu()
+        self.__integration_request = None
+        self.integration.minimization_start = self.start_integration
+        self.integration.minimization_stop = self.stop_integration
+
+    def start_integration(self, request):
+        (ff, steps, steepest, cutoff) = request.get_args()
+        if self._process._is_running == True:
+            if self.__integration_request != None:
+                self.__integration_request.send_response(False)
+            self._process.stop_process()
+
+        def workspace_received(workspace):
+            self._process.start_process(workspace, ff, steps, steepest)
+        self.request_workspace(workspace_received)
+        self.__menu.change_running_status(True)
+
+    def stop_integration(self, request):
+        self._process.stop_process()
+        request.send_response(None)
+        self.__menu.change_running_status(False)
 
     def update(self):
         self._process.update()
