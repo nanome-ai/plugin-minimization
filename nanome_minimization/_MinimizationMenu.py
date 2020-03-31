@@ -95,15 +95,4 @@ class MinimizationMenu():
     def __get_selected_forcefield(self):
         if self.__selected_ff_btn == None:
             return 'Uff'
-        ff_text = self.__selected_ff_btn.text.value_idle
-        if ff_text == "General Amber":
-            return 'Gaff'
-        elif ff_text == "Ghemical":
-            return 'Ghemical'
-        elif ff_text == "MMFF94":
-            return 'MMFF94'
-        elif ff_text == "MMFF94s":
-            return 'MMFF94s'
-        elif ff_text == "Universal":
-            return 'Uff'
-        return 'Uff'
+        return self.__selected_ff_btn.text.value_idle
