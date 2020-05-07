@@ -10,7 +10,9 @@ from timeit import default_timer as timer
 import traceback
 from collections import deque
 import os
+import sys
 
+IS_WIN = sys.platform.startswith('win')
 SDFOPTIONS = Complex.io.SDFSaveOptions()
 SDFOPTIONS.write_bonds = True
 
@@ -39,8 +41,11 @@ class MinimizationProcess():
             self.__stream = stream
             self.__data_queue = deque()
             cwd_path = self.__nanobabel_dir
-            exe_path = os.path.join(cwd_path, 'nanobabel.exe')
-            args = [exe_path, 'MINIMIZE', '-h', '-l', '1', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name, '-dd', 'data']
+            exe = 'nanobabel.exe' if IS_WIN else 'nanobabel'
+            exe_path = os.path.join(cwd_path, exe)
+            args = [exe_path, 'minimize', '-h', '-l', '100', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
+            if IS_WIN:
+                args += ['-dd', 'data']
             Logs.debug(args)
             if steepest:
                 args.append('-sd')
@@ -77,27 +82,26 @@ class MinimizationProcess():
         if self._is_running == False:
             return
 
-        output, error = self.__process.communicate()
+        if self.__process.poll() is None:
+            output, error = self.__process.communicate()
 
-        error = error[self.__processed_error:]
-        self.__processed_error += len(error)
-        error = error.strip()
-        if error != '':
-            Logs.error(error)  # Maybe abort in case of error?
+            error = error[self.__processed_error:]
+            self.__processed_error += len(error)
+            error = error.strip()
+            if error != '':
+                Logs.error(error)  # Maybe abort in case of error?
 
-        output = output[self.__processed_output:]
-        self.__processed_output += len(output)
-        output = output.strip()
-        if output != '':
-            split_output = output.split('\n')
-            self.__processing_output(split_output)
+            output = output[self.__processed_output:]
+            self.__processed_output += len(output)
+            output = output.strip()
+            if output != '':
+                split_output = output.split('\n')
+                self.__processing_output(split_output)
 
         if len(self.__data_queue) > 0 and self.__updating_stream == False:
             data_chunk = self.__data_queue.popleft()
             complex = nanome.api.structure.Complex.io.from_pdb(lines=data_chunk)
-            # if timer() - self.__timer >= 0.1:
             self.__match_and_move(complex)
-            # self.__timer = timer()
 
         if self.__process.poll() is not None and len(self.__data_queue) == 0:
             self.stop_process()
