@@ -4,4 +4,3 @@ __pycache__
 /dist
 /docker/.cachebust
 *.egg-info
-*__pycache__*
