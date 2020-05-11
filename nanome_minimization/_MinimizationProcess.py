@@ -93,7 +93,8 @@ class MinimizationProcess():
             self.stop_process()
 
     def __on_process_error(self, error):
-        Logs.error(error)
+        Logs.warning('Error in nanobabel process:')
+        Logs.warning(error)
 
     def __on_process_output(self, output):
         output = output.strip()
