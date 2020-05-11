@@ -1,13 +1,10 @@
 import nanome
-from nanome.util import Logs, Octree
+from nanome.util import Logs, Octree, Process
 from nanome.api.structure import Complex
 from nanome.util.stream import StreamCreationError
-from nanome.util.enums import StreamType
+from nanome.util.enums import NotificationTypes, StreamType
 
 import tempfile
-import subprocess
-from timeit import default_timer as timer
-import traceback
 from collections import deque
 import os
 import sys
@@ -29,7 +26,9 @@ class MinimizationProcess():
     def __init__(self, plugin, nanobabel_dir):
         self.__plugin = plugin
         self._is_running = False
+        self.__process_running = False
         self.__stream = None
+        self.__data_queue = []
         self.__nanobabel_dir = nanobabel_dir
 
     def start_process(self, workspace, ff, steps, steepest):
@@ -43,27 +42,28 @@ class MinimizationProcess():
             cwd_path = self.__nanobabel_dir
             exe = 'nanobabel.exe' if IS_WIN else 'nanobabel'
             exe_path = os.path.join(cwd_path, exe)
-            args = [exe_path, 'minimize', '-h', '-l', '100', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
+            args = ['minimize', '-h', '-l', '100', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
             if IS_WIN:
                 args += ['-dd', 'data']
-            Logs.debug(args)
             if steepest:
                 args.append('-sd')
-            try:
-                self.__process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, cwd=cwd_path, universal_newlines=True, encoding="utf-8")
-                self._is_running = True
-                Logs.debug("Nanobabel started")
-            except:
-                Logs.error("Couldn't execute nanobabel, please check if executable is in the plugin folder and has permissions:\n", traceback.format_exc())
+            Logs.debug(args)
+
+            p = Process(exe_path, args, True)
+            p.on_error = self.__on_process_error
+            p.on_output = self.__on_process_output
+            p.on_done = self.__on_process_done
+            p.start()
+
+            self.__process = p
+            self.__process_running = True
+            self._is_running = True
 
         input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mol')
         constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
         self.__output_lines = []
-        self.__timer = timer()
         self.__updating_stream = False
-        self.__processed_output = 0
-        self.__processed_error = 0
 
         (saved_atoms, indices) = self.__save__atoms(input_file.name, workspace)
         Logs.debug("Wrote input file:", input_file.name)
@@ -72,41 +72,38 @@ class MinimizationProcess():
         self.__stream = self.__plugin.create_writing_stream(indices, StreamType.position, on_stream_creation)
 
     def stop_process(self):
-        self._is_running = False
+        if self.__process_running:
+            self.__process.stop()
         if self.__stream is not None:
             self.__stream.destroy()
-        self.__stream = None
+            self.__stream = None
+        self._is_running = False
         self.__plugin.minimization_done()
 
     def update(self):
-        if self._is_running == False:
+        if self._is_running == False or self.__updating_stream:
             return
 
-        if self.__process.poll() is None:
-            output, error = self.__process.communicate()
-
-            error = error[self.__processed_error:]
-            self.__processed_error += len(error)
-            error = error.strip()
-            if error != '':
-                Logs.error(error)  # Maybe abort in case of error?
-
-            output = output[self.__processed_output:]
-            self.__processed_output += len(output)
-            output = output.strip()
-            if output != '':
-                split_output = output.split('\n')
-                self.__processing_output(split_output)
-
-        if len(self.__data_queue) > 0 and self.__updating_stream == False:
+        if len(self.__data_queue) > 0:
             data_chunk = self.__data_queue.popleft()
             complex = nanome.api.structure.Complex.io.from_pdb(lines=data_chunk)
             self.__match_and_move(complex)
-
-        if self.__process.poll() is not None and len(self.__data_queue) == 0:
+        elif not self.__process_running:
+            Logs.debug('Minimization complete')
             self.stop_process()
-            Logs.debug("Nanobabel done")
-            return
+
+    def __on_process_error(self, error):
+        Logs.error(error)
+
+    def __on_process_output(self, output):
+        output = output.strip()
+        if output != '':
+            split_output = output.split('\n')
+            self.__processing_output(split_output)
+
+    def __on_process_done(self, code):
+        Logs.debug('Nanobabel done')
+        self.__process_running = False
 
     def __match_and_move(self, complex):
         positions = [0] * (len(self.__atom_position_index_by_serial) * 3)

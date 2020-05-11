@@ -48,6 +48,9 @@ class Minimization(nanome.PluginInstance):
     def on_advanced_settings(self):
         self.__menu.open_menu()
 
+    def on_stop(self):
+        self.stop_minimization()
+
     def start_minimization(self, ff, steps, steepest):
         ff = self.convert_forcefield_value(ff)
         def workspace_received(workspace):
