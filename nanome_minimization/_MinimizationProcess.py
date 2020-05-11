@@ -6,8 +6,11 @@ from nanome.util.enums import NotificationTypes, StreamType
 
 import tempfile
 from collections import deque
+from functools import partial
 import os
 import sys
+
+PACKET_QUEUE_LEN = 20
 
 IS_WIN = sys.platform.startswith('win')
 SDFOPTIONS = Complex.io.SDFSaveOptions()
@@ -42,7 +45,7 @@ class MinimizationProcess():
             cwd_path = self.__nanobabel_dir
             exe = 'nanobabel.exe' if IS_WIN else 'nanobabel'
             exe_path = os.path.join(cwd_path, exe)
-            args = ['minimize', '-h', '-l', '100', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
+            args = ['minimize', '-h', '-l', '20', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
             if IS_WIN:
                 args += ['-dd', 'data']
             if steepest:
@@ -63,7 +66,8 @@ class MinimizationProcess():
         constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
         self.__output_lines = []
-        self.__updating_stream = False
+        self.__updates_done = {}
+        self.__packet_id = 0
 
         (saved_atoms, indices) = self.__save__atoms(input_file.name, workspace)
         Logs.debug("Wrote input file:", input_file.name)
@@ -81,7 +85,9 @@ class MinimizationProcess():
         self.__plugin.minimization_done()
 
     def update(self):
-        if self._is_running == False or self.__updating_stream:
+        if not self._is_running or \
+                self.__packet_id > PACKET_QUEUE_LEN and \
+                not self.__updates_done[self.__packet_id - PACKET_QUEUE_LEN]:
             return
 
         if len(self.__data_queue) > 0:
@@ -118,11 +124,12 @@ class MinimizationProcess():
                 positions[idx * 3 + 2] = atom_relative_pos.z
         if self.__stream == None:
             return
-        self.__updating_stream = True
-        self.__stream.update(positions, self.__update_done)
+        self.__updates_done[self.__packet_id] = False
+        self.__stream.update(positions, partial(self.__update_done, self.__packet_id))
+        self.__packet_id += 1
 
-    def __update_done(self):
-        self.__updating_stream = False
+    def __update_done(self, packet_id):
+        self.__updates_done[packet_id] = True
 
     def __processing_output(self, split_output):
         for line in split_output:
