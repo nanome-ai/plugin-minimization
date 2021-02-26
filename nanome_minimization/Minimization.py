@@ -68,9 +68,9 @@ class Minimization(nanome.PluginInstance):
 
     def set_run_status(self, running):
         if running:
-            self.set_plugin_list_button(nanome.PluginInstance.PluginListButtonType.run, "Stop")
+            self.set_plugin_list_button(nanome.util.enums.PluginListButtonType.run, "Stop")
         else:
-            self.set_plugin_list_button(nanome.PluginInstance.PluginListButtonType.run, "Run")
+            self.set_plugin_list_button(nanome.util.enums.PluginListButtonType.run, "Run")
 
     def convert_forcefield_value(self, value):
         if value == "General Amber" or value == 1:
@@ -92,7 +92,7 @@ def main():
 
     plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True)
     plugin.set_plugin_class(Minimization)
-    plugin.run('127.0.0.1', 8888)
+    plugin.run(nanome.util.config.fetch('host'), nanome.util.config.fetch('port'))
 
 if __name__ == "__main__":
     main()
