@@ -92,7 +92,7 @@ def main():
 
     plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True)
     plugin.set_plugin_class(Minimization)
-    plugin.run(nanome.util.config.fetch('host'), nanome.util.config.fetch('port'))
+    plugin.run()
 
 if __name__ == "__main__":
     main()

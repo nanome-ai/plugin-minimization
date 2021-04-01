@@ -2,23 +2,25 @@
 
 Minimization arranges the selected molecule to try to find a geometry where inter-atomic forces are as close to zero as possible.
 
-### Dependencies
+## Dependencies
 
-`nanome-minimization` requires `nanobabel` to exist in the working directory, or for the path to be specified in the environment variable `NANOBABEL`.
+[Docker](https://docs.docker.com/get-docker/)
 
-### Installation
+When running outside of Docker:
 
-```sh
-$ pip install nanome-minimization
-```
+This plugin requires `nanobabel` to exist in the working directory, or for the path to be specified in the environment variable `NANOBABEL`.
 
-### Usage
+## Usage
 
-To start the plugin:
+To run Minimization in a Docker container:
 
 ```sh
-$ nanome-minimization -a plugin_server_address
+$ cd docker
+$ ./build.sh
+$ ./deploy.sh -a <plugin_server_address> [optional args]
 ```
+
+---
 
 In Nanome:
 
@@ -26,6 +28,15 @@ In Nanome:
 - Select atoms to minimize
 - Click Run to immediately minimize or Advanced Settings to choose different options
 
-### License
+## Development
+
+To run Minimization with autoreload:
+
+```sh
+$ python3 -m pip install -r requirements.txt
+$ python3 run.py -r -a <plugin_server_address> [optional args]
+```
+
+## License
 
 MIT
