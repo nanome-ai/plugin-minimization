@@ -2,6 +2,7 @@ import os
 import sys
 import nanome
 from nanome.util import Logs
+from nanome.util.enums import Integrations
 
 from ._MinimizationMenu import MinimizationMenu
 from ._MinimizationProcess import MinimizationProcess
@@ -90,7 +91,7 @@ def main():
         Logs.error('Error: nanobabel not found, please set NANOBABEL env var')
         sys.exit(1)
 
-    plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True)
+    plugin = nanome.Plugin("Minimization", "Run minimization on selected structures. See Advanced Parameters for forcefield, number of steps, and steepest descent", "Minimization", True, integrations=[Integrations.minimization])
     plugin.set_plugin_class(Minimization)
     plugin.run()
 
