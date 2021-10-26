@@ -9,6 +9,8 @@ class MinimizationMenu():
         self.__selected_ff_btn = None
         self.__nb_steps = 2500
         self.__steepest_descent = True
+        self.__steepest_descent_btn = None
+        self.__conjugate_gradient_btn = None
         self.__steps_label = None
         self.__start_btn = None
         self.__running = False
@@ -63,6 +65,15 @@ class MinimizationMenu():
             self.__steepest_descent = not self.__steepest_descent
             btn.selected = self.__steepest_descent
             self.__plugin.update_content(btn)
+            self.__conjugate_gradient_btn.selected = not self.__steepest_descent
+            self.__plugin.update_content(self.__conjugate_gradient_btn)
+
+        def switch_conjugate_gradient(btn):
+            self.__steepest_descent = not self.__steepest_descent
+            btn.selected = not self.__steepest_descent
+            self.__plugin.update_content(btn)
+            self.__steepest_descent_btn.selected = self.__steepest_descent
+            self.__plugin.update_content(self.__steepest_descent_btn)
 
         def switch_minimization(btn):
             self.toggle_minimization()
@@ -87,9 +98,13 @@ class MinimizationMenu():
         self.__selected_ff_btn = universal_btn
         menu.root.find_node("add_steps", True).get_content().register_pressed_callback(change_steps)
         menu.root.find_node("remove_steps", True).get_content().register_pressed_callback(change_steps)
-        steepest_btn = menu.root.find_node("steepest", True).get_content()
-        steepest_btn.register_pressed_callback(switch_steepest)
-        steepest_btn.selected = True
+        self.__steepest_descent_btn = menu.root.find_node("steepest", True).get_content()
+        self.__steepest_descent_btn.register_pressed_callback(switch_steepest)
+        self.__steepest_descent_btn.selected = True
+        self.__conjugate_gradient_btn = menu.root.find_node("CG", True).get_content()
+        self.__conjugate_gradient_btn.register_pressed_callback(switch_conjugate_gradient)
+        self.__conjugate_gradient_btn.selected = False
+
         self.__start_btn.register_pressed_callback(switch_minimization)
 
     def __get_selected_forcefield(self):
