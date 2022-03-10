@@ -1,5 +1,5 @@
 import nanome
-
+from nanome.util import async_callback
 import os
 
 class MinimizationMenu():
@@ -30,9 +30,10 @@ class MinimizationMenu():
         else:
             self.start_minimization()
 
-    def start_minimization(self):
+    @async_callback
+    async def start_minimization(self):
         self.change_running_status(True)
-        self.__plugin.start_minimization(self.__get_selected_forcefield(), self.__nb_steps, self.__steepest_descent)
+        await self.__plugin.start_minimization(self.__get_selected_forcefield(), self.__nb_steps, self.__steepest_descent)
 
     def stop_minimization(self):
         self.change_running_status(False)
