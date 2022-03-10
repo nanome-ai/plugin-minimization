@@ -11,6 +11,7 @@ NANOBABEL = os.environ.get('NANOBABEL', os.path.join(os.getcwd(), 'nanobabel'))
 if not os.path.exists(NANOBABEL):
     NANOBABEL = None
 
+
 class Minimization(nanome.AsyncPluginInstance):
 
     def start(self):

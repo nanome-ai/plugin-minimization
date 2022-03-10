@@ -2,6 +2,7 @@ import nanome
 from nanome.util import async_callback
 import os
 
+
 class MinimizationMenu():
     def __init__(self, plugin):
         self.__plugin = plugin
