@@ -1,3 +1,4 @@
+import time
 import nanome
 from nanome.util import Logs, Octree, Process
 from nanome.api.structure import Complex
@@ -75,6 +76,14 @@ class MinimizationProcess():
         p.on_error = self.__on_process_error
         p.on_output = self.__on_process_output
         p.on_done = self.__on_process_done
+        self.calculation_start_time = time.time()
+        log_data = {
+            'exe_path': exe_path,
+            'force_field': ff,
+            'steps': steps,
+            'steepest': steepest
+        }
+        Logs.message("Starting Minimization Process", extra=log_data)
         p.start()
 
         self.__process = p
@@ -101,7 +110,6 @@ class MinimizationProcess():
             complex = nanome.api.structure.Complex.io.from_pdb(lines=data_chunk)
             self.__match_and_move(complex)
         elif not self.__process_running:
-            Logs.debug('Minimization complete')
             self.stop_process()
 
     def __on_process_error(self, error):
@@ -115,7 +123,14 @@ class MinimizationProcess():
             self.__processing_output(split_output)
 
     def __on_process_done(self, code):
-        Logs.debug('Nanobabel done')
+        end_time = time.time()
+        calculation_time = round(end_time - self.calculation_start_time, 2)
+
+        extra_log_data = {
+            'process_time': calculation_time,
+            'code': code
+        }
+        Logs.message(f'Minimization finished with exit code {code}', extra=extra_log_data)
         self.__process_running = False
 
     def __match_and_move(self, complex):
