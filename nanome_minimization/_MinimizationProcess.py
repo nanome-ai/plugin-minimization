@@ -42,6 +42,10 @@ class MinimizationProcess():
         self.__updates_done = {}
         self.__packet_id = 0
 
+        if sum(1 for _ in workspace.complexes) == 0:
+            Logs.message('No structures to minimize')
+            return
+
         (saved_atoms, indices) = self.__save__atoms(input_file.name, workspace)
         Logs.debug("Wrote input file:", input_file.name)
         self.__save__constraints(constraints_file.name, saved_atoms)

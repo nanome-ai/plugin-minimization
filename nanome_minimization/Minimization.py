@@ -31,8 +31,7 @@ class Minimization(nanome.AsyncPluginInstance):
         ff = self.convert_forcefield_value(ff)
 
         self.__menu.change_running_status(True)
-        workspace = await self.request_workspace()
-        await self._process.start_process(workspace, ff, steps, steepest)
+        await self.start_minimization(ff, steps, steepest)
 
     def stop_integration(self, request):
         self._process.stop_process()
@@ -56,7 +55,10 @@ class Minimization(nanome.AsyncPluginInstance):
     async def start_minimization(self, ff, steps, steepest):
         ff = self.convert_forcefield_value(ff)
         workspace = await self.request_workspace()
-        await self._process.start_process(workspace, ff, steps, steepest)
+        if sum(1 for _ in workspace.complexes) > 0:
+            await self._process.start_process(workspace, ff, steps, steepest)
+        else:
+            Logs.message("No complexes found. nothing to minimize.")
 
     def stop_minimization(self):
         self._process.stop_process()
@@ -67,10 +69,11 @@ class Minimization(nanome.AsyncPluginInstance):
             self.__integration_request.send_response(True)
 
     def set_run_status(self, running):
+        btn_type = nanome.util.enums.PluginListButtonType.run
         if running:
-            self.set_plugin_list_button(nanome.util.enums.PluginListButtonType.run, "Stop")
+            self.set_plugin_list_button(btn_type, "Stop")
         else:
-            self.set_plugin_list_button(nanome.util.enums.PluginListButtonType.run, "Run")
+            self.set_plugin_list_button(btn_type, "Run")
 
     def convert_forcefield_value(self, value):
         if value == "General Amber" or value == 1:
