@@ -18,10 +18,14 @@ SDFOPTIONS.write_bonds = True
 
 # hack to fix convert_to_frames killing atom indices:
 _atom_shallow_copy = nanome._internal._structure._Atom._shallow_copy
+
+
 def _atom_shallow_copy_fix(self, *args):
     atom = _atom_shallow_copy(self, *args)
     atom._index = self._index
     return atom
+
+
 nanome._internal._structure._Atom._shallow_copy = _atom_shallow_copy_fix
 
 
@@ -76,7 +80,6 @@ class MinimizationProcess():
         self.__process = p
         self.__process_running = True
         self._is_running = True
-
 
     def stop_process(self):
         if self.__process_running:
