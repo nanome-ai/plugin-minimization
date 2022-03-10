@@ -4,8 +4,8 @@ import nanome
 from nanome.util import Logs, async_callback
 from nanome.util.enums import Integrations
 
-from ._MinimizationMenu import MinimizationMenu
-from ._MinimizationProcess import MinimizationProcess
+from .menu import MinimizationMenu
+from .process import MinimizationProcess
 
 NANOBABEL = os.environ.get('NANOBABEL', os.path.join(os.getcwd(), 'nanobabel'))
 if not os.path.exists(NANOBABEL):
@@ -25,7 +25,7 @@ class Minimization(nanome.AsyncPluginInstance):
     @async_callback
     async def start_integration(self, request):
         (ff, steps, steepest, cutoff) = request.get_args()
-        if self._process._is_running == True:
+        if self._process.is_running == True:
             if self.__integration_request != None:
                 self.__integration_request.send_response(False)
             self._process.stop_process()

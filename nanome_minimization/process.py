@@ -2,7 +2,7 @@ import nanome
 from nanome.util import Logs, Octree, Process
 from nanome.api.structure import Complex
 from nanome.util.stream import StreamCreationError
-from nanome.util.enums import NotificationTypes, StreamType
+from nanome.util.enums import StreamType
 
 import tempfile
 from collections import deque
@@ -32,14 +32,14 @@ nanome._internal._structure._Atom._shallow_copy = _atom_shallow_copy_fix
 class MinimizationProcess():
     def __init__(self, plugin, nanobabel_dir):
         self.__plugin = plugin
-        self._is_running = False
+        self.is_running = False
         self.__process_running = False
         self.__stream = None
         self.__data_queue = []
         self.__nanobabel_dir = nanobabel_dir
 
     async def start_process(self, workspace, ff, steps, steepest):
-        input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mol')
+        input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.sdf')
         constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
         self.__output_lines = []
@@ -79,7 +79,7 @@ class MinimizationProcess():
 
         self.__process = p
         self.__process_running = True
-        self._is_running = True
+        self.is_running = True
 
     def stop_process(self):
         if self.__process_running:
@@ -87,11 +87,11 @@ class MinimizationProcess():
         if self.__stream is not None:
             self.__stream.destroy()
             self.__stream = None
-        self._is_running = False
+        self.is_running = False
         self.__plugin.minimization_done()
 
     def update(self):
-        if not self._is_running or \
+        if not self.is_running or \
                 self.__packet_id > PACKET_QUEUE_LEN and \
                 not self.__updates_done[self.__packet_id - PACKET_QUEUE_LEN]:
             return
