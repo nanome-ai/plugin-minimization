@@ -34,34 +34,7 @@ class MinimizationProcess():
         self.__data_queue = []
         self.__nanobabel_dir = nanobabel_dir
 
-    def start_process(self, workspace, ff, steps, steepest):
-        def on_stream_creation(stream, error):
-            if error != StreamCreationError.NoError:
-                Logs.error("Error while creating stream")
-                return
-
-            self.__stream = stream
-            self.__data_queue = deque()
-            cwd_path = self.__nanobabel_dir
-            exe = 'nanobabel.exe' if IS_WIN else 'nanobabel'
-            exe_path = os.path.join(cwd_path, exe)
-            args = ['minimize', '-h', '-l', '20', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
-            if IS_WIN:
-                args += ['-dd', 'data']
-            if steepest:
-                args.append('-sd')
-            Logs.debug(args)
-
-            p = Process(exe_path, args, True)
-            p.on_error = self.__on_process_error
-            p.on_output = self.__on_process_output
-            p.on_done = self.__on_process_done
-            p.start()
-
-            self.__process = p
-            self.__process_running = True
-            self._is_running = True
-
+    async def start_process(self, workspace, ff, steps, steepest):
         input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mol')
         constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
@@ -73,7 +46,33 @@ class MinimizationProcess():
         Logs.debug("Wrote input file:", input_file.name)
         self.__save__constraints(constraints_file.name, saved_atoms)
         Logs.debug("Wrote constraints file:", constraints_file.name)
-        self.__stream = self.__plugin.create_writing_stream(indices, StreamType.position, on_stream_creation)
+        self.__stream, error = await self.__plugin.create_writing_stream(indices, StreamType.position)
+
+        if error != StreamCreationError.NoError:
+            Logs.error(f"Error while creating stream: {error}")
+            return
+
+        self.__data_queue = deque()
+        cwd_path = self.__nanobabel_dir
+        exe = 'nanobabel.exe' if IS_WIN else 'nanobabel'
+        exe_path = os.path.join(cwd_path, exe)
+        args = ['minimize', '-h', '-l', '20', '-n', str(steps), '-ff', ff, '-i', input_file.name, '-cx', constraints_file.name, '-o', output_file.name]
+        if IS_WIN:
+            args += ['-dd', 'data']
+        if steepest:
+            args.append('-sd')
+        Logs.debug(args)
+
+        p = Process(exe_path, args, True)
+        p.on_error = self.__on_process_error
+        p.on_output = self.__on_process_output
+        p.on_done = self.__on_process_done
+        p.start()
+
+        self.__process = p
+        self.__process_running = True
+        self._is_running = True
+
 
     def stop_process(self):
         if self.__process_running:
