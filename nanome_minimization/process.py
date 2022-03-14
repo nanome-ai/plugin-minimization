@@ -110,6 +110,7 @@ class MinimizationProcess():
             complex = nanome.api.structure.Complex.io.from_pdb(lines=data_chunk)
             self.__match_and_move(complex)
         elif not self.__process_running:
+            Logs.debug('Minimization complete')
             self.stop_process()
 
     def __on_process_error(self, error):
