@@ -30,7 +30,7 @@ class MinimizationTestCase(unittest.TestCase):
         self.workspace = Workspace()
         for atom in self.complex.atoms:
             atom.index = randint(1000000000, 9999999999)
-        
+
         self.plugin_instance = Minimization()
         self.plugin_instance.start()
         self.plugin_instance._network = MagicMock()
