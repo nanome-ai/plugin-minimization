@@ -68,10 +68,8 @@ class Minimization(nanome.AsyncPluginInstance):
 
     def set_run_status(self, running):
         btn_type = nanome.util.enums.PluginListButtonType.run
-        if running:
-            self.set_plugin_list_button(btn_type, "Stop")
-        else:
-            self.set_plugin_list_button(btn_type, "Run")
+        btn_text = 'Stop' if running else 'Run'
+        self.set_plugin_list_button(btn_type, btn_text)
 
     def convert_forcefield_value(self, value):
         if value == "General Amber" or value == 1:
