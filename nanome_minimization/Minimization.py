@@ -56,10 +56,7 @@ class Minimization(nanome.AsyncPluginInstance):
     async def start_minimization(self, ff, steps, steepest):
         ff = self.convert_forcefield_value(ff)
         workspace = await self.request_workspace()
-        if sum(1 for _ in workspace.complexes) > 0:
-            await self._process.start_process(workspace, ff, steps, steepest)
-        else:
-            Logs.message("No complexes found. nothing to minimize.")
+        await self._process.start_process(workspace, ff, steps, steepest)
 
     def stop_minimization(self):
         self._process.stop_process()
