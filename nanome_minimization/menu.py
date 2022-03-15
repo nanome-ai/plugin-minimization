@@ -1,6 +1,7 @@
 import nanome
-
+from nanome.util import async_callback
 import os
+
 
 class MinimizationMenu():
     def __init__(self, plugin):
@@ -25,14 +26,15 @@ class MinimizationMenu():
         self.__update_start_btn(running)
 
     def toggle_minimization(self):
-        if self.__plugin._process._is_running:
+        if self.__plugin._process.is_running:
             self.stop_minimization()
         else:
             self.start_minimization()
 
-    def start_minimization(self):
+    @async_callback
+    async def start_minimization(self):
         self.change_running_status(True)
-        self.__plugin.start_minimization(self.__get_selected_forcefield(), self.__nb_steps, self.__steepest_descent)
+        await self.__plugin.start_minimization(self.__get_selected_forcefield(), self.__nb_steps, self.__steepest_descent)
 
     def stop_minimization(self):
         self.change_running_status(False)
@@ -79,7 +81,7 @@ class MinimizationMenu():
             self.toggle_minimization()
 
         # loading menus
-        menu = nanome.ui.Menu.io.from_json(os.path.join(os.path.dirname(__file__), "_MinimizationMenu.json"))
+        menu = nanome.ui.Menu.io.from_json(os.path.join(os.path.dirname(__file__), "minimization_menu.json"))
         self.__menu = menu
         self.__plugin.menu = menu
 
