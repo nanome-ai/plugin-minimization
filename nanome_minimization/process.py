@@ -56,7 +56,13 @@ class MinimizationProcess():
         Logs.debug("Wrote constraints file:", constraints_file.name)
         self.__stream, error = await self.__plugin.create_writing_stream(indices, StreamType.position)
 
-        if error != StreamCreationError.NoError:
+        if error == StreamCreationError.AtomNotFound:
+            # User deleted atom in time between start_process() and create_writing_stream().
+            # so lets update the workspace and try again
+            Logs.warning(f"User deleted atoms while setting up process, retrying")
+            updated_workspace = await self.__plugin.request_workspace()
+            self.start_process(updated_workspace, ff, steps, steepest)
+        elif error != StreamCreationError.NoError:
             Logs.error(f"Error while creating stream: {error}")
             return
 
