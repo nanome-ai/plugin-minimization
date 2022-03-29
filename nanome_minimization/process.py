@@ -61,7 +61,9 @@ class MinimizationProcess():
             # so lets update the workspace and try again
             Logs.warning(f"User deleted atoms while setting up process, retrying")
             updated_workspace = await self.__plugin.request_workspace()
-            self.start_process(updated_workspace, ff, steps, steepest)
+            await self.start_process(updated_workspace, ff, steps, steepest)
+            return
+
         elif error != StreamCreationError.NoError:
             Logs.error(f"Error while creating stream: {error}")
             return
