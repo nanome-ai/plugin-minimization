@@ -2,7 +2,7 @@ import os
 import unittest
 import sys
 
-minimization_dir = f'{os.getcwd()}/nanome_minimization/'
+minimization_dir = f'{os.getcwd()}/plugin/'
 sys.path.append(minimization_dir)
 
 test_directory = 'tests'
