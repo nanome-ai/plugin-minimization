@@ -3,14 +3,16 @@
 echo "./deploy.sh $*" > redeploy.sh
 chmod +x redeploy.sh
 
-existing=$(docker ps -aq -f name=minimization)
+container_name=minimization
+existing=$(docker ps -aq -f name=$container_name)
 if [ -n "$existing" ]; then
     echo "removing existing container"
     docker rm -f $existing
 fi
 
 docker run -d \
---name minimization \
+--name $container_name \
 --restart unless-stopped \
+-h $(hostname)-$container_name \
 -e ARGS="$*" \
-minimization
+$container_name
