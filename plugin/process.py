@@ -38,14 +38,15 @@ class MinimizationProcess():
         self.__stream = None
         self.__data_queue = []
         self.__nanobabel_dir = nanobabel_dir
+        self.temp_dir = tempfile.TemporaryDirectory()
 
     async def start_process(self, workspace, ff, steps, steepest):
         if sum(1 for _ in workspace.complexes) == 0:
             Logs.message('No structures to minimize')
             return
-        input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.sdf')
-        constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt')
-        output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb')
+        input_file = tempfile.NamedTemporaryFile(delete=False, suffix='.sdf', dir=self.temp_dir.name)
+        constraints_file = tempfile.NamedTemporaryFile(delete=False, suffix='.txt', dir=self.temp_dir.name)
+        output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdb', dir=self.temp_dir.name)
         self.__output_lines = []
         self.__updates_done = {}
         self.__packet_id = 0
