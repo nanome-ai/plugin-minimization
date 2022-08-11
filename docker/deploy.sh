@@ -15,4 +15,5 @@ docker run -d \
 --restart unless-stopped \
 -h $(hostname)-$container_name \
 -e ARGS="$*" \
+--ulimit core=0 \
 $container_name
