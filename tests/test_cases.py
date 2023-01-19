@@ -56,7 +56,7 @@ class MinimizationTestCase(unittest.TestCase):
         self.workspace.add_complex(self.complex)
         self.workspace.add_complex(ligand_complex)
 
-    @patch('nanome._internal._network._ProcessNetwork._instance')
+    @patch('nanome._internal.network.PluginNetwork._instance')
     @patch('nanome.api.plugin_instance.PluginInstance.create_writing_stream')
     @patch('nanome.api.plugin_instance.PluginInstance.request_workspace')
     def test_start_minimization(self, request_workspace_mock, create_writing_stream_mock, mock_network):

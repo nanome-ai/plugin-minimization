@@ -18,7 +18,7 @@ SDFOPTIONS = Complex.io.SDFSaveOptions()
 SDFOPTIONS.write_bonds = True
 
 # hack to fix convert_to_frames killing atom indices:
-_atom_shallow_copy = nanome._internal._structure._Atom._shallow_copy
+_atom_shallow_copy = nanome._internal.structure._Atom._shallow_copy
 
 
 def _atom_shallow_copy_fix(self, *args):
@@ -27,7 +27,7 @@ def _atom_shallow_copy_fix(self, *args):
     return atom
 
 
-nanome._internal._structure._Atom._shallow_copy = _atom_shallow_copy_fix
+nanome._internal.structure._Atom._shallow_copy = _atom_shallow_copy_fix
 
 
 class MinimizationProcess():
