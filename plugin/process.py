@@ -192,10 +192,14 @@ class MinimizationProcess():
             if not complex.visible:
                 continue
 
+            current_frame = complex.current_frame
+            if len(list(complex.molecules)) == 1:
+                current_frame = next(complex.molecules).current_conformer
+
             complex = complex.convert_to_frames()
             complex_local_to_workspace_matrix = complex.get_complex_to_workspace_matrix()
 
-            molecule = complex._molecules[complex.current_frame]
+            molecule = complex._molecules[current_frame]
             for atom in molecule.atoms:
                 atom_absolute_pos = complex_local_to_workspace_matrix * atom.position
                 selected_atoms.get_near_append(atom_absolute_pos, 7, found_atoms, 1)
