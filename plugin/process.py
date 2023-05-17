@@ -163,11 +163,26 @@ class MinimizationProcess():
                 self.__output_lines.append(line)
 
     def __save__atoms(self, path, workspace):
+        visible_complexes = []
+        for complex in workspace.complexes:
+            if not complex.visible:
+                continue
+
+            current_frame = complex.current_frame
+            if len(list(complex.molecules)) == 1:
+                current_frame = next(complex.molecules).current_conformer
+
+            complex = complex.convert_to_frames()
+            complex.current_frame = current_frame
+            visible_complexes.append(complex)
+
         selected_atoms = Octree()
 
-        for complex in workspace.complexes:
+        for complex in visible_complexes:
             complex_local_to_workspace_matrix = complex.get_complex_to_workspace_matrix()
-            for atom in complex.atoms:
+            molecule = complex._molecules[complex.current_frame]
+
+            for atom in molecule.atoms:
                 if atom.selected is True:
                     atom_absolute_pos = complex_local_to_workspace_matrix * atom.position
                     selected_atoms.add(atom, atom_absolute_pos)
@@ -188,18 +203,10 @@ class MinimizationProcess():
         result_molecule.add_chain(result_chain)
         result_chain.add_residue(result_residue)
 
-        for complex in workspace.complexes:
-            if not complex.visible:
-                continue
-
-            current_frame = complex.current_frame
-            if len(list(complex.molecules)) == 1:
-                current_frame = next(complex.molecules).current_conformer
-
-            complex = complex.convert_to_frames()
+        for complex in visible_complexes:
             complex_local_to_workspace_matrix = complex.get_complex_to_workspace_matrix()
+            molecule = complex._molecules[complex.current_frame]
 
-            molecule = complex._molecules[current_frame]
             for atom in molecule.atoms:
                 atom_absolute_pos = complex_local_to_workspace_matrix * atom.position
                 selected_atoms.get_near_append(atom_absolute_pos, 7, found_atoms, 1)
